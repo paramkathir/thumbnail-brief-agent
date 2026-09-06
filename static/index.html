@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thumbnail Brief — Deion Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg:#0e0e0e; --surface:#161616; --border:#2a2a2a; --accent:#d4ff47; --accent-dim:rgba(212,255,71,0.12); --text:#f0ede6; --muted:#6b6b6b; --danger:#ff4d4d; --mono:'DM Mono',monospace; --display:'Syne',sans-serif; }
+  body { background:var(--bg); color:var(--text); font-family:var(--mono); min-height:100vh; padding:3rem 1.5rem; }
+  .page { max-width:720px; margin:0 auto; }
+  header { margin-bottom:3rem; }
+  .logo { font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:1.5rem; }
+  h1 { font-family:var(--display); font-size:clamp(2rem,5vw,3.5rem); font-weight:800; line-height:1.05; }
+  h1 span { color:var(--accent); }
+  .tagline { font-size:13px; color:var(--muted); margin-top:.75rem; line-height:1.6; }
+  .input-block { margin-bottom:2rem; }
+  .input-wrap { display:flex; border:1px solid var(--border); border-radius:4px; overflow:hidden; }
+  .input-wrap:focus-within { border-color:var(--accent); }
+  input[type="text"] { flex:1; background:var(--surface); color:var(--text); font-family:var(--mono); font-size:14px; border:none; outline:none; padding:14px 16px; }
+  input::placeholder { color:var(--muted); }
+  button#go { background:var(--accent); color:#0e0e0e; font-family:var(--display); font-size:13px; font-weight:700; border:none; padding:0 24px; cursor:pointer; white-space:nowrap; }
+  button#go:disabled { opacity:.4; cursor:default; }
+  .agent-log { margin-bottom:2rem; }
+  .agent-title,.thumb-label,.block-label,.cell-label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+  .agent-title { font-size:11px; margin-bottom:1rem; }
+  .step-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--muted); }
+  .step-row.active { color:var(--text); } .step-row.done { color:var(--accent); }
+  .dot { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
+  .brief { display:none; } .brief.visible { display:block; }
+  .brief-header { display:flex; align-items:baseline; gap:12px; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid var(--border); }
+  .brief-label { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+  .brief-title { font-family:var(--display); font-size:1.1rem; font-weight:700; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); border:1px solid var(--border); border-radius:4px; margin-bottom:1.5rem; overflow:hidden; }
+  .cell,.block { background:var(--surface); padding:14px 16px; }
+  .cell-label,.block-label { margin-bottom:6px; }
+  .cell-val,.block-val { font-size:13px; line-height:1.6; }
+  .pill { display:inline-block; background:var(--accent-dim); border:1px solid rgba(212,255,71,.25); color:var(--accent); border-radius:2px; padding:2px 8px; font-size:12px; }
+  .stack { display:flex; flex-direction:column; gap:1px; margin-bottom:1.5rem; }
+  .overlay-text-val { font-family:var(--display); font-size:1.4rem; font-weight:800; color:var(--accent); }
+  .palette-row { display:flex; align-items:center; gap:10px; }
+  .swatch { width:32px; height:32px; border-radius:3px; border:1px solid var(--border); }
+  .hex-list,.psych,.donot { font-size:12px; color:var(--muted); }
+  .donot::before { content:'×'; color:var(--danger); font-weight:700; margin-right:8px; }
+  .thumb-preview img { width:100%; border-radius:4px; border:1px solid var(--border); display:block; }
+  .thumb-generating { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:2rem; text-align:center; font-size:12px; color:var(--muted); }
+  .thumb-preview,.thumb-generating { margin-bottom:1.5rem; }
+  .error { color:var(--danger); font-size:13px; padding:8px 0; }
+  footer { margin-top:3rem; font-size:11px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+<header><div class="logo">Deion · Demo Project</div><h1>YouTube<br/><span>thumbnail brief</span><br/>generator</h1><p class="tagline">An autonomous Claude agent that reasons through your title<br/>and outputs a structured design brief — step by step.</p></header>
+<div class="input-block"><div class="input-wrap"><input type="text" id="inp" placeholder="Paste a YouTube title..." /><button id="go" onclick="run()">Generate →</button></div></div>
+<div class="agent-log" id="agentLog" style="display:none;"><div class="agent-title">Agent reasoning</div><div id="steps"></div></div>
+<div class="brief" id="brief">
+<div class="brief-header"><span class="brief-label">Brief</span><span class="brief-title" id="briefTitle"></span></div>
+<div class="grid"><div class="cell"><div class="cell-label">Hook type</div><div class="cell-val"><span class="pill" id="hookType"></span></div></div><div class="cell"><div class="cell-label">Target emotion</div><div class="cell-val"><span class="pill" id="emotion"></span></div></div><div class="cell"><div class="cell-label">Layout</div><div class="cell-val" id="layout"></div></div><div class="cell"><div class="cell-label">Font style</div><div class="cell-val" id="fontStyle"></div></div></div>
+<div class="thumb-generating" id="thumbGenerating" style="display:none;"><div class="thumb-label">Generated thumbnail concept</div>Generating image — this may take a few seconds...</div>
+<div class="thumb-preview" id="thumbPreview" style="display:none;"><div class="thumb-label">Generated thumbnail concept</div><img id="thumbImg" src="" alt="AI-generated thumbnail concept" /></div>
+<div class="stack"><div class="block"><div class="block-label">Visual concept</div><div class="block-val" id="visualConcept"></div></div><div class="block"><div class="block-label">Subject</div><div class="block-val" id="subject"></div></div><div class="block"><div class="block-label">Background</div><div class="block-val" id="background"></div></div><div class="block"><div class="block-label">Viewer psychology</div><div class="block-val psych" id="psychology"></div></div><div class="block"><div class="block-label">Overlay text</div><div class="overlay-text-val" id="overlayText"></div></div><div class="block"><div class="block-label">Color palette</div><div class="palette-row" id="palette"></div></div><div class="block"><div class="block-label">Contrast strategy</div><div class="block-val" id="contrast"></div></div><div class="block"><div class="block-label">Design mistakes to avoid</div><div id="donots"></div></div></div>
+</div><div class="error" id="err"></div><footer>Built with Python + Anthropic Claude · Deion internship demo</footer></div>
+<script>
+const STEP_NAMES=['Parse title intent','Infer viewer emotion','Generate visual concept','Select color palette','Craft overlay text']; let busy=false;
+function renderSteps(activeIdx){document.getElementById('steps').innerHTML=STEP_NAMES.map((name,i)=>{const cls=i<activeIdx?'step-row done':i===activeIdx?'step-row active':'step-row';const label=i<activeIdx?`[done] ${name}`:i===activeIdx?`[running] ${name}`:`[pending] ${name}`;return `<div class="${cls}"><div class="dot"></div><span>${label}</span></div>`}).join('')}
+function showBrief(title,b){document.getElementById('briefTitle').textContent=title;document.getElementById('hookType').textContent=b.hook_type||'—';document.getElementById('emotion').textContent=b.target_emotion||'—';document.getElementById('layout').textContent=b.layout||'—';document.getElementById('fontStyle').textContent=b.font_style||'—';document.getElementById('visualConcept').textContent=b.visual_concept||'—';document.getElementById('subject').textContent=b.subject||'—';document.getElementById('background').textContent=b.background||'—';document.getElementById('psychology').textContent=b.viewer_psychology||'—';document.getElementById('overlayText').textContent=b.overlay_text||'(no overlay)';document.getElementById('contrast').textContent=b.contrast_strategy||'—';document.getElementById('palette').innerHTML=(b.palette||[]).map(c=>`<div class="swatch" style="background:${c}" title="${c}"></div>`).join('')+`<span class="hex-list">${(b.palette||[]).join(' · ')}</span>`;document.getElementById('donots').innerHTML=(b.do_nots||[]).map(d=>`<div class="donot">${d}</div>`).join('');document.getElementById('brief').classList.add('visible')}
+function showImage(imageData){document.getElementById('thumbGenerating').style.display='none';if(imageData){document.getElementById('thumbImg').src=imageData;document.getElementById('thumbPreview').style.display='block'}}
+async function run(){if(busy)return;const title=document.getElementById('inp').value.trim();if(!title){document.getElementById('inp').focus();return}busy=true;document.getElementById('go').disabled=true;document.getElementById('err').textContent='';document.getElementById('brief').classList.remove('visible');document.getElementById('thumbPreview').style.display='none';document.getElementById('agentLog').style.display='block';let stepIdx=0;renderSteps(0);const ticker=setInterval(()=>{stepIdx=Math.min(stepIdx+1,STEP_NAMES.length-1);renderSteps(stepIdx)},900);try{const res=await fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})});clearInterval(ticker);renderSteps(STEP_NAMES.length);const data=await res.json();if(!res.ok)throw new Error(data.error||'Request failed');document.getElementById('thumbGenerating').style.display='block';showBrief(title,data.brief);showImage(data.image)}catch(e){clearInterval(ticker);document.getElementById('err').textContent=e.message||'Something went wrong.'}busy=false;document.getElementById('go').disabled=false}
+document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter')run()});
+</script></body></html>
